@@ -1,57 +1,23 @@
 generator client {
     provider = "prisma-client-js"
+    engineType = "library"
 }
 
 datasource db {
-    provider = "postgresql"
-}
-
-enum UserRole {
-    ADMIN
-    FAMILY
-    SENIOR
-    TENANT
-    STAFF
-}
-
-enum AccessMethod {
-    FACE
-    VOICE
-    RFID
-    PIN
-}
-
-enum AccessStatus {
-    SUCCESS
-    FAILED
-}
-
-enum DeviceType {
-    LIGHT
-    CAMERA
-    SENSOR
-    DOOR_LOCK
-    OTHER
-}
-
-enum NotificationType {
-    ACCESS
-    SECURITY
-    ENERGY
-    HEALTH
-    SYSTEM
+    provider = "sqlite"
 }
 
 model User {
-    id           String   @id @default(uuid()) @db.Uuid
+    id           String   @id @default(uuid())
     firstName    String   @map("first_name")
     lastName     String   @map("last_name")
     email        String   @unique
     phone        String?
     passwordHash String   @map("password_hash")
-    role         UserRole
+    role         String   // was UserRole enum
     language     String   @default("fr")
     isActive     Boolean  @default(true) @map("is_active")
+    mustChangePassword Boolean @default(true) @map("must_change_password")
 
     biometricProfile BiometricProfile?
     rfidCards        RfidCard[]
@@ -68,9 +34,9 @@ model User {
 }
 
 model BiometricProfile {
-    id String @id @default(uuid()) @db.Uuid
+    id String @id @default(uuid())
 
-    userId String @unique @db.Uuid
+    userId String @unique
     user   User   @relation(fields: [userId], references: [id])
 
     faceEmbedding  String? @map("face_embedding")
@@ -83,9 +49,9 @@ model BiometricProfile {
 }
 
 model RfidCard {
-    id String @id @default(uuid()) @db.Uuid
+    id String @id @default(uuid())
 
-    userId String @map("user_id") @db.Uuid
+    userId String @map("user_id")
     user   User   @relation(fields: [userId], references: [id])
 
     uid String @unique
@@ -98,7 +64,7 @@ model RfidCard {
 }
 
 model Room {
-    id String @id @default(uuid()) @db.Uuid
+    id String @id @default(uuid())
 
     name        String
     description String?
@@ -113,13 +79,13 @@ model Room {
 }
 
 model Device {
-    id String @id @default(uuid()) @db.Uuid
+    id String @id @default(uuid())
 
-    roomId String @map("room_id") @db.Uuid
+    roomId String @map("room_id")
     room   Room   @relation(fields: [roomId], references: [id])
 
     name String
-    type DeviceType
+    type String // was DeviceType enum
 
     status Boolean @default(false)
 
@@ -132,10 +98,10 @@ model Device {
 }
 
 model UserPermission {
-    id String @id @default(uuid()) @db.Uuid
+    id String @id @default(uuid())
 
-    userId String @map("user_id") @db.Uuid
-    roomId String @map("room_id") @db.Uuid
+    userId String @map("user_id")
+    roomId String @map("room_id")
 
     user User @relation(fields: [userId], references: [id])
     room Room @relation(fields: [roomId], references: [id])
@@ -152,14 +118,14 @@ model UserPermission {
 }
 
 model AccessLog {
-    id String @id @default(uuid()) @db.Uuid
+    id String @id @default(uuid())
 
-    userId String? @map("user_id") @db.Uuid
+    userId String? @map("user_id")
     user   User?   @relation(fields: [userId], references: [id])
 
-    method AccessMethod
+    method String // was AccessMethod enum
 
-    status AccessStatus
+    status String // was AccessStatus enum
 
     photoUrl String? @map("photo_url")
 
@@ -171,9 +137,9 @@ model AccessLog {
 }
 
 model EnergyConsumption {
-    id String @id @default(uuid()) @db.Uuid
+    id String @id @default(uuid())
 
-    roomId String @map("room_id") @db.Uuid
+    roomId String @map("room_id")
     room   Room   @relation(fields: [roomId], references: [id])
 
     consumption Float
@@ -184,9 +150,9 @@ model EnergyConsumption {
 }
 
 model Reminder {
-    id String @id @default(uuid()) @db.Uuid
+    id String @id @default(uuid())
 
-    userId String @db.Uuid
+    userId String
     user   User   @relation(fields: [userId], references: [id])
 
     title       String
@@ -202,12 +168,12 @@ model Reminder {
 }
 
 model Notification {
-    id String @id @default(uuid()) @db.Uuid
+    id String @id @default(uuid())
 
-    userId String @db.Uuid
+    userId String
     user   User   @relation(fields: [userId], references: [id])
 
-    type NotificationType
+    type String // was NotificationType enum
 
     title   String
     message String
@@ -220,7 +186,7 @@ model Notification {
 }
 
 model SecurityEvent {
-    id String @id @default(uuid()) @db.Uuid
+    id String @id @default(uuid())
 
     title String
 
@@ -236,7 +202,7 @@ model SecurityEvent {
 }
 
 model LightingScenario {
-    id String @id @default(uuid()) @db.Uuid
+    id String @id @default(uuid())
 
     name        String
     description String?
@@ -249,7 +215,7 @@ model LightingScenario {
 }
 
 model SystemSetting {
-    id    String @id @default(uuid()) @db.Uuid
+    id    String @id @default(uuid())
     key   String @unique
     value String
 
@@ -260,8 +226,8 @@ model SystemSetting {
 }
 
 model RefreshToken {
-    id         String    @id @default(uuid()) @db.Uuid
-    userId     String    @map("user_id") @db.Uuid
+    id         String    @id @default(uuid())
+    userId     String    @map("user_id")
     token      String    @unique
     deviceInfo String?   @map("device_info")
     ipAddress  String?   @map("ip_address")

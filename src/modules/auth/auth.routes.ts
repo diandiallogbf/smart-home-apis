@@ -29,5 +29,11 @@ export const createAuthRoutes = (
         authController.getProfile
     );
 
+    router.post(
+        '/change-password',
+        authMiddleware.authenticate,
+        authController.changePassword
+    );
+
     return router;
 }

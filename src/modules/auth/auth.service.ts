@@ -32,7 +32,11 @@ export class AuthService {
             ipAddress
         );
 
-        return { user, ...tokens };
+        return { 
+            user, 
+            ...tokens,
+            mustChangePassword: user.mustChangePassword 
+        };
     }
 
     async refresh(
@@ -123,5 +127,18 @@ export class AuthService {
         const { passwordHash, ...safeUser } = user;
 
         return safeUser;
+    }
+
+    async changePassword(userId: string, newPassword: string): Promise<void> {
+        const salt = await bcrypt.genSalt(10);
+        const passwordHash = await bcrypt.hash(newPassword, salt);
+
+        await prisma.user.update({
+            where: { id: userId },
+            data: { 
+                passwordHash,
+                mustChangePassword: false 
+            }
+        });
     }
 }

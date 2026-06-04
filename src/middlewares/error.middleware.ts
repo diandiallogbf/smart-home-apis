@@ -46,8 +46,13 @@ export const errorHandler = (error: any, req: Request, res: Response, next: Next
         return ResponseUtil.badRequest(res, 'Erreur de validation');
     }
 
+    // Erreurs JWT
+    if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError' || error.name === 'NotBeforeError') {
+        return ResponseUtil.error(res, 'Jeton invalide ou expiré', 401, 'UnauthorizedError');
+    }
+
     // Erreur inconnue
-    return ResponseUtil.internalError(res, 'Erreur inconnue');
+    return ResponseUtil.internalError(res, error.message || 'Erreur inconnue');
 };
 
 export const notFoundHandler = (req: Request, res: Response) => {
