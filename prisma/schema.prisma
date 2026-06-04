@@ -1,0 +1,278 @@
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "postgresql"
+}
+
+enum UserRole {
+    ADMIN
+    FAMILY
+    SENIOR
+    TENANT
+    STAFF
+}
+
+enum AccessMethod {
+    FACE
+    VOICE
+    RFID
+    PIN
+}
+
+enum AccessStatus {
+    SUCCESS
+    FAILED
+}
+
+enum DeviceType {
+    LIGHT
+    CAMERA
+    SENSOR
+    DOOR_LOCK
+    OTHER
+}
+
+enum NotificationType {
+    ACCESS
+    SECURITY
+    ENERGY
+    HEALTH
+    SYSTEM
+}
+
+model User {
+    id           String   @id @default(uuid()) @db.Uuid
+    firstName    String   @map("first_name")
+    lastName     String   @map("last_name")
+    email        String   @unique
+    phone        String?
+    passwordHash String   @map("password_hash")
+    role         UserRole
+    language     String   @default("fr")
+    isActive     Boolean  @default(true) @map("is_active")
+
+    biometricProfile BiometricProfile?
+    rfidCards        RfidCard[]
+    accessLogs       AccessLog[]
+    reminders        Reminder[]
+    notifications    Notification[]
+    permissions      UserPermission[]
+
+    createdAt     DateTime       @default(now()) @map("created_at")
+    updatedAt     DateTime       @updatedAt @map("updated_at")
+    refreshTokens RefreshToken[]
+
+    @@map("users")
+}
+
+model BiometricProfile {
+    id String @id @default(uuid()) @db.Uuid
+
+    userId String @unique @db.Uuid
+    user   User   @relation(fields: [userId], references: [id])
+
+    faceEmbedding  String? @map("face_embedding")
+    voiceEmbedding String? @map("voice_embedding")
+
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    @@map("biometric_profiles")
+}
+
+model RfidCard {
+    id String @id @default(uuid()) @db.Uuid
+
+    userId String @map("user_id") @db.Uuid
+    user   User   @relation(fields: [userId], references: [id])
+
+    uid String @unique
+
+    isActive Boolean @default(true) @map("is_active")
+
+    createdAt DateTime @default(now()) @map("created_at")
+
+    @@map("rfid_cards")
+}
+
+model Room {
+    id String @id @default(uuid()) @db.Uuid
+
+    name        String
+    description String?
+
+    devices     Device[]
+    permissions UserPermission[]
+    energyLogs  EnergyConsumption[]
+
+    createdAt DateTime @default(now()) @map("created_at")
+
+    @@map("rooms")
+}
+
+model Device {
+    id String @id @default(uuid()) @db.Uuid
+
+    roomId String @map("room_id") @db.Uuid
+    room   Room   @relation(fields: [roomId], references: [id])
+
+    name String
+    type DeviceType
+
+    status Boolean @default(false)
+
+    intensity Int?
+
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    @@map("devices")
+}
+
+model UserPermission {
+    id String @id @default(uuid()) @db.Uuid
+
+    userId String @map("user_id") @db.Uuid
+    roomId String @map("room_id") @db.Uuid
+
+    user User @relation(fields: [userId], references: [id])
+    room Room @relation(fields: [roomId], references: [id])
+
+    canAccess Boolean @default(true) @map("can_access")
+
+    startHour Int? @map("start_hour")
+    endHour   Int? @map("end_hour")
+
+    createdAt DateTime @default(now()) @map("created_at")
+
+    @@unique([userId, roomId])
+    @@map("user_permissions")
+}
+
+model AccessLog {
+    id String @id @default(uuid()) @db.Uuid
+
+    userId String? @map("user_id") @db.Uuid
+    user   User?   @relation(fields: [userId], references: [id])
+
+    method AccessMethod
+
+    status AccessStatus
+
+    photoUrl String? @map("photo_url")
+
+    details String?
+
+    createdAt DateTime @default(now()) @map("created_at")
+
+    @@map("access_log")
+}
+
+model EnergyConsumption {
+    id String @id @default(uuid()) @db.Uuid
+
+    roomId String @map("room_id") @db.Uuid
+    room   Room   @relation(fields: [roomId], references: [id])
+
+    consumption Float
+
+    recordedAt DateTime @default(now()) @map("recorded_at")
+
+    @@map("energy_consumption")
+}
+
+model Reminder {
+    id String @id @default(uuid()) @db.Uuid
+
+    userId String @db.Uuid
+    user   User   @relation(fields: [userId], references: [id])
+
+    title       String
+    description String?
+
+    scheduledAt DateTime
+
+    completed Boolean @default(false)
+
+    createdAt DateTime @default(now()) @map("created_at")
+
+    @@map("reminders")
+}
+
+model Notification {
+    id String @id @default(uuid()) @db.Uuid
+
+    userId String @db.Uuid
+    user   User   @relation(fields: [userId], references: [id])
+
+    type NotificationType
+
+    title   String
+    message String
+
+    isRead Boolean @default(false)
+
+    createdAt DateTime @default(now()) @map("created_at")
+
+    @@map("notifications")
+}
+
+model SecurityEvent {
+    id String @id @default(uuid()) @db.Uuid
+
+    title String
+
+    description String?
+
+    severity String
+
+    photoUrl String? @map("photo_url")
+
+    createdAt DateTime @default(now()) @map("created_at")
+
+    @@map("security_events")
+}
+
+model LightingScenario {
+    id String @id @default(uuid()) @db.Uuid
+
+    name        String
+    description String?
+
+    isActive Boolean @default(true) @map("is_active")
+
+    createdAt DateTime @default(now())
+
+    @@map("lighting_scenarios")
+}
+
+model SystemSetting {
+    id    String @id @default(uuid()) @db.Uuid
+    key   String @unique
+    value String
+
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    @@map("system_settings")
+}
+
+model RefreshToken {
+    id         String    @id @default(uuid()) @db.Uuid
+    userId     String    @map("user_id") @db.Uuid
+    token      String    @unique
+    deviceInfo String?   @map("device_info")
+    ipAddress  String?   @map("ip_address")
+    expiresAt  DateTime  @map("expires_at")
+    revoked    Boolean   @default(false)
+    revokedAt  DateTime? @map("revoked_at")
+    createdAt  DateTime  @default(now()) @map("created_at")
+
+    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    @@index([userId])
+    @@index([token])
+    @@map("refresh_tokens")
+}
